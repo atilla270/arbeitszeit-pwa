@@ -311,6 +311,11 @@ function manuellEintragen() {
 
   status();
 }
+ 
+  window.onload = function() {
+  status();
+  setInterval(status, 60000);
+};
 </script>
 </body>
 </html>
