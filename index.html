@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arbeitszeit</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#111111">
+</head>
+<body>
+  <h1>Arbeitszeit</h1>
+
+  <button onclick="einstempeln()">🟢 Einstempeln</button>
+  <button onclick="pauseStart()">☕ Pause beginnen</button>
+  <button onclick="pauseEnde()">▶️ Pause beenden</button>
+  <button onclick="status()">📊 Status</button>
+  <button onclick="reset()">🔄 Neuer Tag</button>
+
+  <h2 id="ausgabe"></h2>
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+
+function zeit(t) {
+  return new Date(t).toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"});
+}
+
+function einstempeln() {
+  localStorage.setItem("start", Date.now());
+  localStorage.setItem("pause", 0);
+  document.getElementById("ausgabe").innerHTML = "Eingestempelt um " + zeit(Date.now());
+}
+
+function pauseStart() {
+  localStorage.setItem("pauseStart", Date.now());
+  document.getElementById("ausgabe").innerHTML = "Pause gestartet um " + zeit(Date.now());
+}
+
+function pauseEnde() {
+  let ps = Number(localStorage.getItem("pauseStart"));
+  if (!ps) return alert("Du hast keine Pause gestartet.");
+
+  let minuten = Math.round((Date.now() - ps) / 60000);
+  let gesamt = Number(localStorage.getItem("pause") || 0) + minuten;
+
+  localStorage.setItem("pause", gesamt);
+  localStorage.removeItem("pauseStart");
+
+  document.getElementById("ausgabe").innerHTML =
+    "Pause beendet.<br>Pause: " + minuten + " Minuten<br>Gesamtpause: " + gesamt + " Minuten";
+}
+
+function status() {
+  let start = Number(localStorage.getItem("start"));
+  if (!start) return alert("Du hast dich noch nicht eingestempelt.");
+
+  let pause = Number(localStorage.getItem("pause") || 0);
+  let ende = start + (10 * 60 + pause) * 60000;
+
+  document.getElementById("ausgabe").innerHTML =
+    "Arbeitsbeginn: " + zeit(start) + "<br>" +
+    "Pause: " + pause + " Minuten<br><br>" +
+    "Spätestens gehen:<br>" + zeit(ende);
+}
+
+function reset() {
+  localStorage.clear();
+  document.getElementById("ausgabe").innerHTML = "Neuer Arbeitstag gestartet.";
+}
+</script>
+</body>
+</html>
