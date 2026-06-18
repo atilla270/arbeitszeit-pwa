@@ -244,6 +244,38 @@ window.onload = function() {
   status();
   setInterval(status, 60000);
 };
+
+function manuellEintragen() {
+
+  let eingabe = prompt(
+    "Arbeitsbeginn eingeben (z.B. 06:00)"
+  );
+
+  if (!eingabe) return;
+
+  let teile = eingabe.split(":");
+
+  if (teile.length !== 2) {
+    alert("Bitte Format HH:MM verwenden.");
+    return;
+  }
+
+  let datum = new Date();
+
+  datum.setHours(
+    parseInt(teile[0]),
+    parseInt(teile[1]),
+    0,
+    0
+  );
+
+  localStorage.setItem(
+    "start",
+    datum.getTime()
+  );
+
+  status();
+}
 </script>
 </body>
 </html>
