@@ -94,6 +94,18 @@
       font-size: 13px;
       color: #6b7280;
     }
+
+    .manual-link {
+  text-align: center;
+  margin-top: 12px;
+    }
+
+.manual-link a {
+  color: #2563eb;
+  font-size: 14px;
+  text-decoration: none;
+  font-weight: 600;
+    }
   </style>
 </head>
 
@@ -116,6 +128,9 @@
     <button class="danger" onclick="reset()">Neuer Tag</button>
 
     <div class="hint">Maximal 10 Stunden Netto-Arbeitszeit</div>
+    <div class="manual-link">
+  <a href="#" onclick="manuellEintragen(); return false;">Zeit manuell eintragen</a>
+</div>
   </div>
 
 <script>
@@ -237,6 +252,26 @@ function feierabend() {
 function reset() {
   if (!confirm("Neuen Arbeitstag starten und alle Zeiten löschen?")) return;
   localStorage.clear();
+  status();
+}
+
+  function manuellEintragen() {
+  let eingabe = prompt("Arbeitsbeginn eingeben, z.B. 06:00");
+  if (!eingabe) return;
+
+  let teile = eingabe.split(":");
+  if (teile.length !== 2) {
+    alert("Bitte im Format HH:MM eingeben.");
+    return;
+  }
+
+  let datum = new Date();
+  datum.setHours(parseInt(teile[0]), parseInt(teile[1]), 0, 0);
+
+  localStorage.setItem("start", datum.getTime());
+  localStorage.setItem("pause", localStorage.getItem("pause") || 0);
+  localStorage.removeItem("pauseStart");
+
   status();
 }
 
