@@ -8,9 +8,7 @@
   <meta name="theme-color" content="#111827">
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -27,10 +25,10 @@
     .app {
       width: 100%;
       max-width: 420px;
-      background: #ffffff;
+      background: white;
       border-radius: 28px;
       padding: 26px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
     }
 
     h1 {
@@ -45,8 +43,13 @@
       padding: 22px;
       text-align: center;
       margin-bottom: 22px;
-      min-height: 150px;
+      min-height: 180px;
+      transition: .2s;
     }
+
+    .green { background: #dcfce7; }
+    .yellow { background: #fef9c3; }
+    .red { background: #fee2e2; }
 
     .label {
       color: #6b7280;
@@ -57,7 +60,6 @@
     .big-time {
       font-size: 48px;
       font-weight: 800;
-      letter-spacing: -1px;
       margin: 8px 0;
     }
 
@@ -75,22 +77,16 @@
       margin-top: 12px;
       font-size: 18px;
       font-weight: 700;
-      cursor: pointer;
       background: #2563eb;
       color: white;
+      cursor: pointer;
     }
 
-    button.secondary {
-      background: #374151;
-    }
+    button.secondary { background: #374151; }
+    button.danger { background: #dc2626; }
+    button.success { background: #16a34a; }
 
-    button.danger {
-      background: #dc2626;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
+    button:active { transform: scale(.98); }
 
     .hint {
       text-align: center;
@@ -105,15 +101,18 @@
   <div class="app">
     <h1>Arbeitszeit</h1>
 
-    <div class="status-box" id="ausgabe">
-      <div class="label">Status</div>
-      <div class="info">Noch nicht eingestempelt.</div>
+    <div class="status-box" id="box">
+      <div id="ausgabe">
+        <div class="label">Status</div>
+        <div class="info">Noch nicht eingestempelt.</div>
+      </div>
     </div>
 
     <button onclick="einstempeln()">Einstempeln</button>
     <button class="secondary" onclick="pauseStart()">Pause beginnen</button>
     <button class="secondary" onclick="pauseEnde()">Pause beenden</button>
     <button onclick="status()">Status aktualisieren</button>
+    <button class="success" onclick="feierabend()">Feierabend-Check</button>
     <button class="danger" onclick="reset()">Neuer Tag</button>
 
     <div class="hint">Maximal 10 Stunden Netto-Arbeitszeit</div>
@@ -135,9 +134,13 @@ function dauer(ms) {
   let minuten = Math.max(0, Math.floor(ms / 60000));
   let h = Math.floor(minuten / 60);
   let m = minuten % 60;
-
   if (h <= 0) return m + " Min.";
   return h + " Std. " + m + " Min.";
+}
+
+function setBox(status) {
+  let box = document.getElementById("box");
+  box.className = "status-box " + status;
 }
 
 function ausgabe(html) {
@@ -146,59 +149,47 @@ function ausgabe(html) {
 
 function einstempeln() {
   let jetzt = Date.now();
-
   localStorage.setItem("start", jetzt);
   localStorage.setItem("pause", 0);
   localStorage.removeItem("pauseStart");
-
-  ausgabe(`
-    <div class="label">Arbeitsbeginn gespeichert</div>
-    <div class="big-time">${zeit(jetzt)}</div>
-    <div class="info">Pause ist aktuell 0 Minuten.</div>
-  `);
+  status();
 }
 
 function pauseStart() {
   let start = Number(localStorage.getItem("start"));
-  if (!start) {
-    alert("Du musst dich zuerst einstempeln.");
-    return;
-  }
+  if (!start) return alert("Du musst dich zuerst einstempeln.");
 
   let jetzt = Date.now();
   localStorage.setItem("pauseStart", jetzt);
 
+  setBox("yellow");
   ausgabe(`
-    <div class="label">Pause gestartet</div>
+    <div class="label">Pause läuft seit</div>
     <div class="big-time">${zeit(jetzt)}</div>
-    <div class="info">Drücke nach der Pause auf „Pause beenden“.</div>
+    <div class="info">Nach der Pause auf „Pause beenden“ drücken.</div>
   `);
 }
 
 function pauseEnde() {
   let ps = Number(localStorage.getItem("pauseStart"));
-  if (!ps) {
-    alert("Du hast keine Pause gestartet.");
-    return;
-  }
+  if (!ps) return alert("Du hast keine Pause gestartet.");
 
   let minuten = Math.round((Date.now() - ps) / 60000);
   let gesamt = Number(localStorage.getItem("pause") || 0) + minuten;
 
   localStorage.setItem("pause", gesamt);
   localStorage.removeItem("pauseStart");
-
-  ausgabe(`
-    <div class="label">Pause beendet</div>
-    <div class="big-time">${gesamt} Min.</div>
-    <div class="info">Diese Pause: ${minuten} Minuten<br>Gesamtpause heute: ${gesamt} Minuten</div>
-  `);
+  status();
 }
 
 function status() {
   let start = Number(localStorage.getItem("start"));
   if (!start) {
-    alert("Du hast dich noch nicht eingestempelt.");
+    setBox("");
+    ausgabe(`
+      <div class="label">Status</div>
+      <div class="info">Noch nicht eingestempelt.</div>
+    `);
     return;
   }
 
@@ -206,7 +197,10 @@ function status() {
   let ende = start + (10 * 60 + pause) * 60000;
   let rest = ende - Date.now();
 
-  let restText = rest > 0 ? dauer(rest) : "Zeit überschritten";
+  let farbe = "green";
+  if (rest <= 60 * 60 * 1000) farbe = "yellow";
+  if (rest <= 0) farbe = "red";
+  setBox(farbe);
 
   ausgabe(`
     <div class="label">Spätestens gehen</div>
@@ -214,21 +208,42 @@ function status() {
     <div class="info">
       Arbeitsbeginn: ${zeit(start)}<br>
       Pause: ${pause} Minuten<br>
-      Verbleibend: ${restText}
+      Verbleibend: ${rest > 0 ? dauer(rest) : "überschritten"}
+    </div>
+  `);
+}
+
+function feierabend() {
+  let start = Number(localStorage.getItem("start"));
+  if (!start) return alert("Du hast dich noch nicht eingestempelt.");
+
+  let pause = Number(localStorage.getItem("pause") || 0);
+  let netto = Date.now() - start - pause * 60000;
+  let max = 10 * 60 * 60000;
+
+  let ok = netto <= max;
+  setBox(ok ? "green" : "red");
+
+  ausgabe(`
+    <div class="label">Feierabend-Check</div>
+    <div class="big-time">${dauer(netto)}</div>
+    <div class="info">
+      Netto-Arbeitszeit<br>
+      ${ok ? "Alles im Rahmen." : "10 Stunden überschritten!"}
     </div>
   `);
 }
 
 function reset() {
   if (!confirm("Neuen Arbeitstag starten und alle Zeiten löschen?")) return;
-
   localStorage.clear();
-
-  ausgabe(`
-    <div class="label">Zurückgesetzt</div>
-    <div class="info">Du kannst dich jetzt neu einstempeln.</div>
-  `);
+  status();
 }
+
+window.onload = function() {
+  status();
+  setInterval(status, 60000);
+};
 </script>
 </body>
 </html>
