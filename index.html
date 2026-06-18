@@ -281,38 +281,26 @@ window.onload = function() {
 };
 
 function manuellEintragen() {
-
-  let eingabe = prompt(
-    "Arbeitsbeginn eingeben (z.B. 06:00)"
-  );
-
+  let eingabe = prompt("Arbeitsbeginn eingeben, z.B. 06:00");
   if (!eingabe) return;
 
   let teile = eingabe.split(":");
-
   if (teile.length !== 2) {
-    alert("Bitte Format HH:MM verwenden.");
+    alert("Bitte im Format HH:MM eingeben.");
     return;
   }
 
   let datum = new Date();
+  datum.setHours(parseInt(teile[0]), parseInt(teile[1]), 0, 0);
 
-  datum.setHours(
-    parseInt(teile[0]),
-    parseInt(teile[1]),
-    0,
-    0
-  );
-
-  localStorage.setItem(
-    "start",
-    datum.getTime()
-  );
+  localStorage.setItem("start", datum.getTime());
+  localStorage.setItem("pause", localStorage.getItem("pause") || 0);
+  localStorage.removeItem("pauseStart");
 
   status();
 }
- 
-  window.onload = function() {
+
+window.onload = function() {
   status();
   setInterval(status, 60000);
 };
