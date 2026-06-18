@@ -5,18 +5,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Arbeitszeit</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#111827">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: #111827;
+      color: #111827;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 26px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0 0 20px;
+      font-size: 30px;
+    }
+
+    .status-box {
+      background: #f3f4f6;
+      border-radius: 22px;
+      padding: 22px;
+      text-align: center;
+      margin-bottom: 22px;
+      min-height: 150px;
+    }
+
+    .label {
+      color: #6b7280;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .big-time {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin: 8px 0;
+    }
+
+    .info {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #374151;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 16px;
+      padding: 17px;
+      margin-top: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+
+    button.secondary {
+      background: #374151;
+    }
+
+    button.danger {
+      background: #dc2626;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .hint {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>Arbeitszeit</h1>
+  <div class="app">
+    <h1>Arbeitszeit</h1>
 
-  <button onclick="einstempeln()">🟢 Einstempeln</button>
-  <button onclick="pauseStart()">☕ Pause beginnen</button>
-  <button onclick="pauseEnde()">▶️ Pause beenden</button>
-  <button onclick="status()">📊 Status</button>
-  <button onclick="reset()">🔄 Neuer Tag</button>
+    <div class="status-box" id="ausgabe">
+      <div class="label">Status</div>
+      <div class="info">Noch nicht eingestempelt.</div>
+    </div>
 
-  <h2 id="ausgabe"></h2>
+    <button onclick="einstempeln()">Einstempeln</button>
+    <button class="secondary" onclick="pauseStart()">Pause beginnen</button>
+    <button class="secondary" onclick="pauseEnde()">Pause beenden</button>
+    <button onclick="status()">Status aktualisieren</button>
+    <button class="danger" onclick="reset()">Neuer Tag</button>
+
+    <div class="hint">Maximal 10 Stunden Netto-Arbeitszeit</div>
+  </div>
 
 <script>
 if ("serviceWorker" in navigator) {
@@ -24,23 +125,62 @@ if ("serviceWorker" in navigator) {
 }
 
 function zeit(t) {
-  return new Date(t).toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"});
+  return new Date(t).toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function dauer(ms) {
+  let minuten = Math.max(0, Math.floor(ms / 60000));
+  let h = Math.floor(minuten / 60);
+  let m = minuten % 60;
+
+  if (h <= 0) return m + " Min.";
+  return h + " Std. " + m + " Min.";
+}
+
+function ausgabe(html) {
+  document.getElementById("ausgabe").innerHTML = html;
 }
 
 function einstempeln() {
-  localStorage.setItem("start", Date.now());
+  let jetzt = Date.now();
+
+  localStorage.setItem("start", jetzt);
   localStorage.setItem("pause", 0);
-  document.getElementById("ausgabe").innerHTML = "Eingestempelt um " + zeit(Date.now());
+  localStorage.removeItem("pauseStart");
+
+  ausgabe(`
+    <div class="label">Arbeitsbeginn gespeichert</div>
+    <div class="big-time">${zeit(jetzt)}</div>
+    <div class="info">Pause ist aktuell 0 Minuten.</div>
+  `);
 }
 
 function pauseStart() {
-  localStorage.setItem("pauseStart", Date.now());
-  document.getElementById("ausgabe").innerHTML = "Pause gestartet um " + zeit(Date.now());
+  let start = Number(localStorage.getItem("start"));
+  if (!start) {
+    alert("Du musst dich zuerst einstempeln.");
+    return;
+  }
+
+  let jetzt = Date.now();
+  localStorage.setItem("pauseStart", jetzt);
+
+  ausgabe(`
+    <div class="label">Pause gestartet</div>
+    <div class="big-time">${zeit(jetzt)}</div>
+    <div class="info">Drücke nach der Pause auf „Pause beenden“.</div>
+  `);
 }
 
 function pauseEnde() {
   let ps = Number(localStorage.getItem("pauseStart"));
-  if (!ps) return alert("Du hast keine Pause gestartet.");
+  if (!ps) {
+    alert("Du hast keine Pause gestartet.");
+    return;
+  }
 
   let minuten = Math.round((Date.now() - ps) / 60000);
   let gesamt = Number(localStorage.getItem("pause") || 0) + minuten;
@@ -48,26 +188,46 @@ function pauseEnde() {
   localStorage.setItem("pause", gesamt);
   localStorage.removeItem("pauseStart");
 
-  document.getElementById("ausgabe").innerHTML =
-    "Pause beendet.<br>Pause: " + minuten + " Minuten<br>Gesamtpause: " + gesamt + " Minuten";
+  ausgabe(`
+    <div class="label">Pause beendet</div>
+    <div class="big-time">${gesamt} Min.</div>
+    <div class="info">Diese Pause: ${minuten} Minuten<br>Gesamtpause heute: ${gesamt} Minuten</div>
+  `);
 }
 
 function status() {
   let start = Number(localStorage.getItem("start"));
-  if (!start) return alert("Du hast dich noch nicht eingestempelt.");
+  if (!start) {
+    alert("Du hast dich noch nicht eingestempelt.");
+    return;
+  }
 
   let pause = Number(localStorage.getItem("pause") || 0);
   let ende = start + (10 * 60 + pause) * 60000;
+  let rest = ende - Date.now();
 
-  document.getElementById("ausgabe").innerHTML =
-    "Arbeitsbeginn: " + zeit(start) + "<br>" +
-    "Pause: " + pause + " Minuten<br><br>" +
-    "Spätestens gehen:<br>" + zeit(ende);
+  let restText = rest > 0 ? dauer(rest) : "Zeit überschritten";
+
+  ausgabe(`
+    <div class="label">Spätestens gehen</div>
+    <div class="big-time">${zeit(ende)}</div>
+    <div class="info">
+      Arbeitsbeginn: ${zeit(start)}<br>
+      Pause: ${pause} Minuten<br>
+      Verbleibend: ${restText}
+    </div>
+  `);
 }
 
 function reset() {
+  if (!confirm("Neuen Arbeitstag starten und alle Zeiten löschen?")) return;
+
   localStorage.clear();
-  document.getElementById("ausgabe").innerHTML = "Neuer Arbeitstag gestartet.";
+
+  ausgabe(`
+    <div class="label">Zurückgesetzt</div>
+    <div class="info">Du kannst dich jetzt neu einstempeln.</div>
+  `);
 }
 </script>
 </body>
