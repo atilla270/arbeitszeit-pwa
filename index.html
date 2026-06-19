@@ -256,17 +256,30 @@ function reset() {
 }
 
   function manuellEintragen() {
-  let eingabe = prompt("Arbeitsbeginn eingeben, z.B. 06:00");
+  let eingabe = prompt("Arbeitsbeginn eingeben, z.B. 0652 für 06:52");
   if (!eingabe) return;
 
-  let teile = eingabe.split(":");
-  if (teile.length !== 2) {
-    alert("Bitte im Format HH:MM eingeben.");
+  eingabe = eingabe.replace(/\D/g, "");
+
+  if (eingabe.length === 3) {
+    eingabe = "0" + eingabe;
+  }
+
+  if (eingabe.length !== 4) {
+    alert("Bitte 4 Zahlen eingeben, z.B. 0652.");
+    return;
+  }
+
+  let stunden = parseInt(eingabe.slice(0, 2));
+  let minuten = parseInt(eingabe.slice(2, 4));
+
+  if (stunden > 23 || minuten > 59) {
+    alert("Bitte eine gültige Uhrzeit eingeben.");
     return;
   }
 
   let datum = new Date();
-  datum.setHours(parseInt(teile[0]), parseInt(teile[1]), 0, 0);
+  datum.setHours(stunden, minuten, 0, 0);
 
   localStorage.setItem("start", datum.getTime());
   localStorage.setItem("pause", localStorage.getItem("pause") || 0);
