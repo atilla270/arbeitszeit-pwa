@@ -49,6 +49,7 @@
 
     .green { background: #dcfce7; }
     .yellow { background: #fef9c3; }
+    .orange { background: #ffedd5; }
     .red { background: #fee2e2; }
 
     .label {
@@ -96,15 +97,15 @@
     }
 
     .manual-link {
-  text-align: center;
-  margin-top: 12px;
+      text-align: center;
+      margin-top: 10px;
     }
 
-.manual-link a {
-  color: #2563eb;
-  font-size: 14px;
-  text-decoration: none;
-  font-weight: 600;
+    .manual-link a {
+      color: #2563eb;
+      font-size: 14px;
+      text-decoration: none;
+      font-weight: 600;
     }
   </style>
 </head>
@@ -128,9 +129,14 @@
     <button class="danger" onclick="reset()">Neuer Tag</button>
 
     <div class="hint">Maximal 10 Stunden Netto-Arbeitszeit</div>
+
     <div class="manual-link">
-  <a href="#" onclick="manuellEintragen(); return false;">Arbeitsbeginn manuell eintragen</a>
-</div>
+      <a href="#" onclick="manuellEintragen(); return false;">Arbeitsbeginn manuell eintragen</a>
+    </div>
+
+    <div class="manual-link">
+      <a href="#" onclick="pauseManuellEintragen(); return false;">Pause manuell eintragen</a>
+    </div>
   </div>
 
 <script>
@@ -146,11 +152,14 @@ function zeit(t) {
 }
 
 function dauer(ms) {
-  let minuten = Math.max(0, Math.floor(ms / 60000));
-  let h = Math.floor(minuten / 60);
-  let m = minuten % 60;
-  if (h <= 0) return m + " Min.";
-  return h + " Std. " + m + " Min.";
+  let sekunden = Math.max(0, Math.floor(ms / 1000));
+  let h = Math.floor(sekunden / 3600);
+  let m = Math.floor((sekunden % 3600) / 60);
+  let s = sekunden % 60;
+
+  if (h > 0) return h + " Std. " + m + " Min. " + s + " Sek.";
+  if (m > 0) return m + " Min. " + s + " Sek.";
+  return s + " Sek.";
 }
 
 function setBox(status) {
@@ -214,6 +223,7 @@ function status() {
 
   let farbe = "green";
   if (rest <= 60 * 60 * 1000) farbe = "yellow";
+  if (rest <= 15 * 60 * 1000) farbe = "orange";
   if (rest <= 0) farbe = "red";
   setBox(farbe);
 
@@ -255,7 +265,7 @@ function reset() {
   status();
 }
 
-  function manuellEintragen() {
+function manuellEintragen() {
   let eingabe = prompt("Arbeitsbeginn eingeben");
   if (!eingabe) return;
 
@@ -266,7 +276,7 @@ function reset() {
   }
 
   if (eingabe.length !== 4) {
-    alert("Bitte 4 Zahlen eingeben, z.B. 0652.");
+    alert("Bitte 4 Zahlen eingeben.");
     return;
   }
 
@@ -288,9 +298,26 @@ function reset() {
   status();
 }
 
+function pauseManuellEintragen() {
+  let eingabe = prompt("Pausenzeit in Minuten eingeben");
+  if (!eingabe) return;
+
+  let minuten = parseInt(eingabe.replace(/\D/g, ""));
+
+  if (isNaN(minuten) || minuten < 0) {
+    alert("Bitte eine gültige Minutenzahl eingeben.");
+    return;
+  }
+
+  localStorage.setItem("pause", minuten);
+  localStorage.removeItem("pauseStart");
+
+  status();
+}
+
 window.onload = function() {
   status();
-  setInterval(status, 60000);
+  setInterval(status, 1000);
 };
 </script>
 </body>
